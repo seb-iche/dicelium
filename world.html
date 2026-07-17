@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>world — Cryptocelium</title>
+  <link rel="stylesheet" href="src/style.css" />
+  <link rel="stylesheet" href="src/world.css" />
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <div id="world-topbar">
+    <span id="spawn-counter">— organisms</span>
+    <button id="refresh-btn" type="button" title="refresh">↻</button>
+  </div>
+
+  <div id="world-loading">growing the world…</div>
+
+  <form id="lookup-form">
+    <input id="lookup-input" type="text" placeholder="claim code — find your organism" autocomplete="off" />
+    <button id="lookup-submit" type="submit">find</button>
+  </form>
+  <p id="lookup-status"></p>
+
+  <a id="join-link" href="join.html">+ spawn yours</a>
+
+  <script type="module" src="src/worldView.js"></script>
+</body>
+</html>

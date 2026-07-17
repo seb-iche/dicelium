@@ -12,6 +12,7 @@
 
 import { createWorld, spawnColony, growColony } from './world.js';
 import { BIOMES } from './biomes.js';
+import { hexToRgb } from './colony.js';
 
 /** BIOME_KEYS — stable ordering used to derive a biome deterministically from a seed */
 export const BIOME_KEYS = Object.keys(BIOMES);
@@ -93,4 +94,28 @@ export function growToMaturity(seed) {
   let res;
   do { res = tickOrganism(world); } while (!res.done);
   return world;
+}
+
+/**
+ * extractRenderData
+ * Purpose:  Reduce a matured organism world down to the flat, precomputed
+ *           shape the world view needs to draw it cheaply every frame —
+ *           cell offsets from the colony's local centre, colours resolved
+ *           to rgba strings once, and a bounding radius for culling and
+ *           for sizing the cheap "far" dot impression.
+ * Input:    world  Object  — a world produced by growToMaturity
+ * Output:   { radius: number, colorA: string, cells: { dx, dy, rgba }[] }
+ */
+export function extractRenderData(world) {
+  const col = world.colonies[0];
+  const cx = LOCAL_WORLD_SIZE / 2, cy = LOCAL_WORLD_SIZE / 2;
+  let radius = 0;
+  const cells = col.cells.map((c) => {
+    const dx = c.x - cx, dy = c.y - cy;
+    const dist = Math.hypot(dx, dy);
+    if (dist > radius) radius = dist;
+    const [r, g, b] = hexToRgb(c.neonColor || col.colorA);
+    return { dx, dy, rgba: `rgb(${r},${g},${b})` };
+  });
+  return { radius: radius || 10, colorA: col.colorA, cells };
 }
