@@ -54,15 +54,16 @@ export function rgbToHex(r, g, b) {
  * Purpose:  Blend two hex colours with a random interpolation weight
  *           and a small random drift so the palette evolves without
  *           converging to a flat midpoint.
- * Input:    hexA  string  — First hex colour
- *           hexB  string  — Second hex colour
+ * Input:    hexA  string    — First hex colour
+ *           hexB  string    — Second hex colour
+ *           rng   () => number  — Random source in [0, 1); default Math.random
  * Output:   string  — Blended hex colour
  */
-export function blendColors(hexA, hexB) {
+export function blendColors(hexA, hexB, rng = Math.random) {
   const [r1, g1, b1] = hexToRgb(hexA);
   const [r2, g2, b2] = hexToRgb(hexB);
-  const t = 0.4 + Math.random() * 0.2;
-  const drift = () => (Math.random() - 0.5) * 30;
+  const t = 0.4 + rng() * 0.2;
+  const drift = () => (rng() - 0.5) * 30;
   return rgbToHex(
     Math.min(255, Math.max(0, r1 * (1 - t) + r2 * t + drift())),
     Math.min(255, Math.max(0, g1 * (1 - t) + g2 * t + drift())),
@@ -122,22 +123,23 @@ export class Cell {
  */
 export class Colony {
   /**
-   * Input:  x         number  — Origin x pixel
-   *         y         number  — Origin y pixel
-   *         biomeKey  string  — Key into BIOMES config (default: DEFAULT_BIOME)
+   * Input:  x         number      — Origin x pixel
+   *         y         number      — Origin y pixel
+   *         biomeKey  string      — Key into BIOMES config (default: DEFAULT_BIOME)
+   *         rng       () => number  — Random source in [0, 1); default Math.random
    */
-  constructor(x, y, biomeKey = DEFAULT_BIOME) {
-    this.id = Math.random();
+  constructor(x, y, biomeKey = DEFAULT_BIOME, rng = Math.random) {
+    this.id = rng();
     this.x = Math.floor(x);
     this.y = Math.floor(y);
     this.age = 0;
     this.cells = [];
     this.bloomed = false;
     const palette = BIOMES[biomeKey]?.colors || NEON;
-    this.colorA = palette[Math.floor(Math.random() * palette.length)];
-    this.colorB = palette[Math.floor(Math.random() * palette.length)];
+    this.colorA = palette[Math.floor(rng() * palette.length)];
+    this.colorB = palette[Math.floor(rng() * palette.length)];
     this.neonColor = this.colorA;
     const [min, max] = BIOMES[biomeKey]?.growth.sporeInterval || [80, 120];
-    this.sporeTimer = min + Math.random() * (max - min);
+    this.sporeTimer = min + rng() * (max - min);
   }
 }

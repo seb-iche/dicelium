@@ -19,6 +19,7 @@ import { Cell, Colony, blendColors } from './colony.js';
 import { hexToHue } from './audio.js';
 import { createEaterState, spawnEater, tickEaters } from './eater.js';
 import { BIOMES, DEFAULT_BIOME } from './biomes.js';
+import { mulberry32 } from './rng.js';
 
 /**
  * CELL_SIZE
@@ -59,6 +60,11 @@ function snap(v) {
  * createWorld
  * Purpose:  Initialise a fresh world state with all subsystems empty.
  * Input:    biomeKey  string  — Biome ID from BIOMES (default: DEFAULT_BIOME)
+ *           seed      number|undefined  — uint32 seed for deterministic growth.
+ *                     When provided, all colour/growth randomness in this world
+ *                     is drawn from a seeded PRNG so the same seed reproduces
+ *                     the identical organism. Omit for non-deterministic play
+ *                     (falls back to Math.random, unchanged from before).
  * Output:   Object — {
  *             cells      Cell[]
  *             colonies   Colony[]
@@ -69,9 +75,10 @@ function snap(v) {
  *             occupied   Set<string>
  *             es         Object
  *             biome      string
+ *             rng        () => number
  *           }
  */
-export function createWorld(biomeKey = DEFAULT_BIOME) {
+export function createWorld(biomeKey = DEFAULT_BIOME, seed) {
   return {
     cells: [],
     colonies: [],
@@ -82,6 +89,7 @@ export function createWorld(biomeKey = DEFAULT_BIOME) {
     occupied: new Set(),
     es: createEaterState(),
     biome: biomeKey,
+    rng: seed === undefined ? Math.random : mulberry32(seed),
   };
 }
 
@@ -114,7 +122,7 @@ function placeCell(world, x, y, colonyId, generation) {
  * Output:   void
  */
 export function spawnColony(world, x, y) {
-  const col = new Colony(x, y, world.biome || DEFAULT_BIOME);
+  const col = new Colony(x, y, world.biome || DEFAULT_BIOME, world.rng || Math.random);
   const offsets = [[0,0],[1,0],[0,1],[-1,0],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]];
   let placed = 0;
   for (const [ox, oy] of offsets) {
@@ -183,15 +191,16 @@ function checkCollision(world, cell, col) {
  *           col    Colony  — Colony to grow (mutated)
  * Output:   void
  */
-function growColony(world, col) {
-  const source = col.cells[Math.floor(Math.random() * col.cells.length)];
+export function growColony(world, col) {
+  const rng = world.rng || Math.random;
+  const source = col.cells[Math.floor(rng() * col.cells.length)];
   if (!source) return;
   const biome = BIOMES[world.biome] || BIOMES[DEFAULT_BIOME];
   const stepOptions = biome.growth.steps;
   const bloomThreshold = biome.growth.bloomThreshold;
-  const dirs = DIRS.slice().sort(() => Math.random() - 0.5);
+  const dirs = DIRS.slice().sort(() => rng() - 0.5);
   for (const [dx, dy] of dirs) {
-    const steps = stepOptions[Math.floor(Math.random() * stepOptions.length)];
+    const steps = stepOptions[Math.floor(rng() * stepOptions.length)];
     const nc = placeCell(world,
       source.x + dx * CELL_SIZE * steps,
       source.y + dy * CELL_SIZE * steps,
@@ -208,7 +217,7 @@ function growColony(world, col) {
         });
         if (world.audio) world.audio.triggerBloom(col.colorA);
       } else if (col.bloomed) {
-        const newColor = blendColors(col.colorA, col.colorB);
+        const newColor = blendColors(col.colorA, col.colorB, rng);
         nc.bloomed = true;
         nc.neonColor = newColor;
         col.colorA = col.colorB;
