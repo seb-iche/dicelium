@@ -84,15 +84,21 @@ export function blendColors(hexA, hexB, rng = Math.random) {
  *   alpha      number       — Current opacity 0–1 (fades in from 0)
  *   bloomed    boolean      — Whether this cell has received a neon colour
  *   neonColor  string|null  — Hex colour assigned at or after bloom
+ *   value      number       — Lineage number: a seed cell gets a fresh
+ *                             1–10 draw, every other cell is its parent's
+ *                             value plus a fresh 1–10 draw. Unused by the
+ *                             default renderer; exists for alternate
+ *                             renderers (e.g. the ASCII prototype) to draw.
  */
 export class Cell {
   /**
-   * Input:  x          number  — Pixel x (will be floored)
-   *         y          number  — Pixel y (will be floored)
-   *         colonyId   number  — Owning colony ID
-   *         generation number  — Growth depth from seed
+   * Input:  x           number  — Pixel x (will be floored)
+   *         y           number  — Pixel y (will be floored)
+   *         colonyId    number  — Owning colony ID
+   *         generation  number  — Growth depth from seed
+   *         value       number  — Lineage number (see class doc)
    */
-  constructor(x, y, colonyId, generation) {
+  constructor(x, y, colonyId, generation, value = 0) {
     this.x = Math.floor(x);
     this.y = Math.floor(y);
     this.colonyId = colonyId;
@@ -101,6 +107,7 @@ export class Cell {
     this.alpha = 0;
     this.bloomed = false;
     this.neonColor = null;
+    this.value = value;
   }
 }
 

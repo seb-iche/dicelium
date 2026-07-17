@@ -1,135 +1,45 @@
 /**
- * renderer.js
- * Canvas 2D drawing engine for mycelium world.
- *
- * Draw order each frame:
- *   1. Fade trail (semi-transparent black for motion blur)
- *   2. Colony threads (Bresenham lines between adjacent cells)
- *   3. Spore particles
- *   4. Cells (with ripple boost brightening)
- *   5. Ripple rings
- *   6. Dust particles
- *   7. Scars
- *   8. Eaters (lifecycle-aware: worm → colourworm → thickworm → frog)
+ * asciiRenderer.js
+ * Prototype alternate renderer: draws each cell as a digit instead of a
+ * flat square. The digit is a cell's lineage value (see Cell in colony.js —
+ * parent's value + a fresh 1–10 draw, wrapped to one glyph) rendered in
+ * the cell's existing colour. Everything else (threads, spores, ripples,
+ * dust, scars, eaters) is unchanged from renderFlat — this only reskins
+ * the mycelium body itself, the visually dominant element.
  */
 
 import { CELL_SIZE } from './world.js';
 import { hexToRgb } from './colony.js';
+import { drawPixelLine, getRippleBoost, brighten } from './renderer.js';
+
+/** GLYPH_SIZE — font size (px) for each cell's digit; bigger than CELL_SIZE so it's legible */
+const GLYPH_SIZE = 7;
 
 /**
- * createRenderer
- * Purpose:  Extract a 2D context from the canvas.
- * Input:    canvas  HTMLCanvasElement
- * Output:   { ctx: CanvasRenderingContext2D }
- */
-export function createRenderer(canvas) {
-  const ctx = canvas.getContext('2d');
-  return { ctx };
-}
-
-/**
- * resizeCanvas
- * Purpose:  Resize canvas to fill the browser window.
- * Input:    canvas  HTMLCanvasElement  (mutated)
- * Output:   void
- */
-export function resizeCanvas(canvas) {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-
-/**
- * drawPixelLine
- * Purpose:  Bresenham line between two points, each step drawn as a CELL_SIZE square.
- * Input:    ctx        CanvasRenderingContext2D
- *           x0,y0      number  — Start (px)
- *           x1,y1      number  — End (px)
- *           r,g,b      number  — Colour channels 0–255
- *           alpha      number  — Opacity 0–1
- * Output:   void
- */
-export function drawPixelLine(ctx, x0, y0, x1, y1, r, g, b, alpha) {
-  x0 = Math.floor(x0); y0 = Math.floor(y0);
-  x1 = Math.floor(x1); y1 = Math.floor(y1);
-  const dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
-  const dy = -Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
-  let err = dx + dy;
-  ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
-  while (true) {
-    ctx.fillRect(x0, y0, CELL_SIZE, CELL_SIZE);
-    if (x0 === x1 && y0 === y1) break;
-    const e2 = 2 * err;
-    if (e2 >= dy) { err += dy; x0 += sx; }
-    if (e2 <= dx) { err += dx; y0 += sy; }
-  }
-}
-
-/**
- * getRippleBoost
- * Purpose:  Calculate brightness boost for a cell from nearby ripple rings.
- *           Boost peaks at the wavefront band (±24px from ring edge).
- * Input:    cx       number    — Cell x (px)
- *           cy       number    — Cell y (px)
- *           ripples  Object[]  — Active ripples {x, y, radius, age, maxAge}
- * Output:   number  — Boost 0–0.9
- */
-export function getRippleBoost(cx, cy, ripples) {
-  let boost = 0;
-  for (const rip of ripples) {
-    const dx = cx - rip.x, dy = cy - rip.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    const rippleWidth = 24;
-    const delta = Math.abs(dist - rip.radius);
-    if (delta < rippleWidth) {
-      const wave = 1 - (delta / rippleWidth);
-      const fade = 1 - (rip.age / rip.maxAge);
-      boost = Math.max(boost, wave * fade * 0.9);
-    }
-  }
-  return boost;
-}
-
-/**
- * brighten
- * Purpose:  Lerp r, g, b toward white by factor t.
- * Input:    r,g,b  number  — Source channels 0–255
- *           t      number  — 0=unchanged, 1=white
- * Output:   [number, number, number]
- */
-export function brighten(r, g, b, t) {
-  return [
-    Math.round(r + (255 - r) * t),
-    Math.round(g + (255 - g) * t),
-    Math.round(b + (255 - b) * t),
-  ];
-}
-
-/**
- * render
- * Purpose:  Top-level render call. Delegates to renderFlat.
- * Input:    ctx      CanvasRenderingContext2D
- *           world    Object
- *           isoMode  boolean  — Reserved, unused
- * Output:   void
- */
-export function render(ctx, world, isoMode = false) {
-  renderFlat(ctx, world, ctx.canvas.width, ctx.canvas.height);
-}
-
-/**
- * renderFlat
- * Purpose:  Draw the full world in flat 2D pixel art style each frame.
+ * renderAscii
+ * Purpose:  Top-level render call for the ASCII prototype.
  * Input:    ctx    CanvasRenderingContext2D
  *           world  Object
- *           W,H    number  — Canvas dimensions (px)
  * Output:   void
  */
-function renderFlat(ctx, world, W, H) {
+export function renderAscii(ctx, world) {
+  renderAsciiFlat(ctx, world, ctx.canvas.width, ctx.canvas.height);
+}
+
+/**
+ * renderAsciiFlat
+ * Purpose:  Draw the full world with cells as coloured digits.
+ * Input:    ctx    CanvasRenderingContext2D
+ *           world  Object
+ *           W, H   number  — Canvas dimensions (px)
+ * Output:   void
+ */
+function renderAsciiFlat(ctx, world, W, H) {
   // 1. Fade trail
   ctx.fillStyle = 'rgba(0,0,0,0.18)';
   ctx.fillRect(0, 0, W, H);
 
-  // 2. Colony threads
+  // 2. Colony threads (unchanged from renderFlat)
   for (const col of world.colonies) {
     const sorted = col.cells.slice().sort((a, b) => a.generation - b.generation);
     const [tr, tg, tb] = col.bloomed ? hexToRgb(col.neonColor) : [200, 200, 200];
@@ -145,16 +55,20 @@ function renderFlat(ctx, world, W, H) {
     }
   }
 
-  // 3. Spores
+  // 3. Spores (unchanged)
   for (const s of world.spores) {
     ctx.fillStyle = `rgba(180,255,255,${(s.life * 0.7).toFixed(2)})`;
     ctx.fillRect(Math.floor(s.x), Math.floor(s.y), CELL_SIZE, CELL_SIZE);
   }
 
-  // 4. Cells with ripple boost
+  // 4. Cells — drawn as digits instead of flat squares
   const hasRipples = world.ripples.length > 0;
+  ctx.font = `${GLYPH_SIZE}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
   for (const c of world.cells) {
-    const px = Math.floor(c.x), py = Math.floor(c.y);
+    const px = Math.floor(c.x) + CELL_SIZE / 2;
+    const py = Math.floor(c.y) + CELL_SIZE / 2;
     const alpha = Math.min(1, c.alpha);
     let r, g, b, a;
     if (c.bloomed && c.neonColor) {
@@ -172,10 +86,10 @@ function renderFlat(ctx, world, W, H) {
       }
     }
     ctx.fillStyle = `rgba(${r},${g},${b},${a.toFixed(2)})`;
-    ctx.fillRect(px, py, CELL_SIZE, CELL_SIZE);
+    ctx.fillText(String(c.value % 10), px, py);
   }
 
-  // 5. Ripple rings
+  // 5. Ripple rings (unchanged)
   for (const rip of world.ripples) {
     const fade = 1 - (rip.age / rip.maxAge);
     ctx.beginPath();
@@ -185,7 +99,7 @@ function renderFlat(ctx, world, W, H) {
     ctx.stroke();
   }
 
-  // 6. Dust
+  // 6. Dust (unchanged)
   if (world.dust) {
     for (const d of world.dust) {
       const grey = Math.floor(80 + d.life * 80);
@@ -194,7 +108,7 @@ function renderFlat(ctx, world, W, H) {
     }
   }
 
-  // 7 & 8. Scars and eaters
+  // 7 & 8. Scars and eaters (unchanged)
   if (world.es) {
     for (const [key, remaining] of world.es.scars) {
       const [gx, gy] = key.split(',').map(Number);
@@ -254,4 +168,3 @@ function renderFlat(ctx, world, W, H) {
     }
   }
 }
-

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>D I C E L I U M — ascii</title>
+  <link rel="stylesheet" href="src/style.css" />
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <div id="start-screen">
+    <div id="start-inner">
+      <h1 id="start-title">D I C E L I U M</h1>
+      <h2 id="title">ascii prototype</h2>
+      <p id="start-sub">choose your ecosystem</p>
+      <div id="biome-grid">
+        <button class="biome-btn" data-biome="earthy">
+          <span class="biome-icon">🍂</span>
+          <span class="biome-name">Earthy</span>
+          <span class="biome-desc">slow dense growth</span>
+        </button>
+        <button class="biome-btn" data-biome="aquatic">
+          <span class="biome-icon">🌊</span>
+          <span class="biome-name">Aquatic</span>
+          <span class="biome-desc">flowing spread</span>
+        </button>
+        <button class="biome-btn" data-biome="weather">
+          <span class="biome-icon">⚡</span>
+          <span class="biome-name">Weather</span>
+          <span class="biome-desc">erratic fast growth</span>
+        </button>
+        <button class="biome-btn" data-biome="volcanic">
+          <span class="biome-icon">🌋</span>
+          <span class="biome-name">Volcanic</span>
+          <span class="biome-desc">aggressive growth</span>
+        </button>
+        <button class="biome-btn" data-biome="arctic">
+          <span class="biome-icon">❄️</span>
+          <span class="biome-name">Arctic</span>
+          <span class="biome-desc">crystalline slow</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="ui">
+    <div id="controls">
+      <button id="btn-spawn">+ spawn</button>
+      <button id="btn-reset">reset</button>
+      <button id="btn-menu" title="back to menu">⌂ menu</button>
+      <button id="btn-mute" title="mute">🔊</button>
+    </div>
+    <div id="info-row">
+      <span id="biome-label"></span>
+      <span id="timer">00:00:00</span>
+      <span id="info"></span>
+    </div>
+  </div>
+
+  <script type="module" src="src/newVersion.js"></script>
+</body>
+</html>

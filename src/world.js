@@ -97,20 +97,25 @@ export function createWorld(biomeKey = DEFAULT_BIOME, seed) {
  * placeCell
  * Purpose:  Attempt to place a new Cell at the given coordinates.
  *           Rejects if slot is occupied or out of bounds.
- * Input:    world       Object  — World state (mutated: occupied)
- *           x           number  — Target pixel x
- *           y           number  — Target pixel y
- *           colonyId    number  — Owning colony ID
- *           generation  number  — Growth generation depth
+ * Input:    world        Object       — World state (mutated: occupied)
+ *           x            number       — Target pixel x
+ *           y            number       — Target pixel y
+ *           colonyId     number       — Owning colony ID
+ *           generation   number       — Growth generation depth
+ *           parentValue  number|null  — Source cell's lineage value, if any
+ *                        (see Cell doc); null for a seed cell.
  * Output:   Cell|null
  */
-function placeCell(world, x, y, colonyId, generation) {
+function placeCell(world, x, y, colonyId, generation, parentValue = null) {
   const sx = snap(x), sy = snap(y);
   const key = toGrid(sx, sy);
   if (world.occupied.has(key)) return null;
   if (sx < 0 || sx + CELL_SIZE > world.W || sy < 0 || sy + CELL_SIZE > world.H) return null;
   world.occupied.add(key);
-  return new Cell(sx, sy, colonyId, generation);
+  const rng = world.rng || Math.random;
+  const draw = 1 + Math.floor(rng() * 10);
+  const value = parentValue === null ? draw : parentValue + draw;
+  return new Cell(sx, sy, colonyId, generation, value);
 }
 
 /**
@@ -204,7 +209,7 @@ export function growColony(world, col) {
     const nc = placeCell(world,
       source.x + dx * CELL_SIZE * steps,
       source.y + dy * CELL_SIZE * steps,
-      col.id, source.generation + 1);
+      col.id, source.generation + 1, source.value);
     if (nc) {
       col.cells.push(nc);
       world.cells.push(nc);
