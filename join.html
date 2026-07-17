@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>join — Cryptocelium</title>
+  <link rel="stylesheet" href="src/style.css" />
+  <link rel="stylesheet" href="src/join.css" />
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <div id="join-screen">
+    <div id="join-inner">
+      <h1 id="join-title">grow your organism</h1>
+      <p id="join-sub">your name or any phrase — it becomes a living seed</p>
+      <form id="join-form">
+        <input id="join-input" type="text" maxlength="40" placeholder="your name or any phrase" autocomplete="off" required />
+        <button id="join-submit" type="submit">spawn</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="claim-panel" class="hidden">
+    <div id="claim-inner">
+      <p id="claim-label">save this — it's the key to your organism</p>
+      <div id="claim-code-row">
+        <span id="claim-code"></span>
+        <button id="claim-copy" type="button">copy</button>
+      </div>
+      <label id="email-label" for="email-input">leave your email to be notified when minting opens for genesis organisms</label>
+      <div id="email-row">
+        <input id="email-input" type="email" placeholder="you@example.com (optional)" autocomplete="email" />
+        <button id="email-submit" type="button">save</button>
+      </div>
+      <p id="email-status"></p>
+    </div>
+  </div>
+
+  <script type="module" src="src/join.js"></script>
+</body>
+</html>
