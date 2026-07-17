@@ -12,8 +12,13 @@ import { CELL_SIZE } from './world.js';
 import { hexToRgb } from './colony.js';
 import { drawPixelLine, getRippleBoost, brighten } from './renderer.js';
 
-/** GLYPH_SIZE — font size (px) for each cell's digit; bigger than CELL_SIZE so it's legible */
-const GLYPH_SIZE = 7;
+/**
+ * GLYPH_SIZE — font size (px) for each cell's digit. 7px sat right at the
+ * threshold where anti-aliased glyph rendering turns to mush (flat squares
+ * don't have this problem — text does). 12px reads as crisp legible digits
+ * even where cells overlap heavily.
+ */
+const GLYPH_SIZE = 12;
 
 /**
  * renderAscii
