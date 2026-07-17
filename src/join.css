@@ -67,6 +67,7 @@
   color: rgba(255,255,255,0.9);
   border-radius: 4px;
   width: 100%;
+  min-height: 44px;
 }
 
 #join-input:focus {
@@ -83,6 +84,7 @@
   color: rgba(255,255,255,0.9);
   border-radius: 4px;
   cursor: pointer;
+  min-height: 44px;
   transition: border-color 0.2s, background 0.2s;
 }
 
@@ -141,6 +143,9 @@
   border: 1px solid rgba(125,255,176,0.35);
   border-radius: 4px;
   flex: 1;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
 }
 
 #claim-copy {
@@ -182,6 +187,7 @@
   border-radius: 4px;
   flex: 1;
   min-width: 0;
+  min-height: 44px;
 }
 
 #email-input:focus {
@@ -206,4 +212,11 @@
   font-size: 11px;
   color: rgba(125,255,176,0.8);
   min-height: 14px;
+}
+
+@media (max-width: 480px) {
+  #join-screen {
+    align-items: flex-end;
+    padding-bottom: 12vh;
+  }
 }
