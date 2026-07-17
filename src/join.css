@@ -40,6 +40,17 @@
   letter-spacing: 0.03em;
 }
 
+#sealed-message {
+  font-family: monospace;
+  font-size: 13px;
+  color: rgba(255,180,120,0.8);
+  letter-spacing: 0.03em;
+}
+
+#sealed-message.hidden {
+  display: none;
+}
+
 #join-form {
   display: flex;
   flex-direction: column;
