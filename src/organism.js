@@ -4,8 +4,10 @@
  * the existing colony-growth engine (world.js/colony.js) without its
  * multi-colony ecosystem subsystems (spores, eaters, dust) — a spawned
  * organism is a standalone keepsake, not a competing colony in an
- * ecosystem. Fully seeded: same seed + same canvas size always reaches
- * the identical bloomed cell layout after the same number of ticks.
+ * ecosystem. Fully seeded: same seed always reaches the identical bloomed
+ * cell layout after the same number of ticks, regardless of device —
+ * growth always happens in a fixed-size local space (LOCAL_WORLD_SIZE),
+ * independent of any viewport, so screen size can never perturb the result.
  */
 
 import { createWorld, spawnColony, growColony } from './world.js';
@@ -13,6 +15,9 @@ import { BIOMES } from './biomes.js';
 
 /** BIOME_KEYS — stable ordering used to derive a biome deterministically from a seed */
 export const BIOME_KEYS = Object.keys(BIOMES);
+
+/** LOCAL_WORLD_SIZE — fixed growth-space bounds; a generous margin, never actually reached */
+export const LOCAL_WORLD_SIZE = 800;
 
 /**
  * biomeForSeed
@@ -31,17 +36,16 @@ const MAX_TICKS = 600;
 
 /**
  * createOrganismWorld
- * Purpose:  Set up a world holding exactly one seeded colony, centred on
- *           the given canvas dimensions.
+ * Purpose:  Set up a world holding exactly one seeded colony, centred in
+ *           the fixed local growth space.
  * Input:    seed  number  — uint32 seed
- *           W, H  number  — canvas pixel dimensions (also the local world bounds)
  * Output:   Object  — world state, ready to be advanced with tickOrganism
  */
-export function createOrganismWorld(seed, W, H) {
+export function createOrganismWorld(seed) {
   const world = createWorld(biomeForSeed(seed), seed);
-  world.W = W;
-  world.H = H;
-  spawnColony(world, W / 2, H / 2);
+  world.W = LOCAL_WORLD_SIZE;
+  world.H = LOCAL_WORLD_SIZE;
+  spawnColony(world, LOCAL_WORLD_SIZE / 2, LOCAL_WORLD_SIZE / 2);
   return world;
 }
 
@@ -74,4 +78,19 @@ export function tickOrganism(world) {
   const matured = col?.bloomed && world._matureTicks >= BLOOM_BUFFER_TICKS;
   const done = matured || world._tickCount >= MAX_TICKS;
   return { done, bloomed: !!col?.bloomed, cellCount: col ? col.cells.length : 0 };
+}
+
+/**
+ * growToMaturity
+ * Purpose:  Synchronously run an organism's growth to completion — for
+ *           contexts (like the world view) that render a static mature
+ *           snapshot instead of an animated live bloom.
+ * Input:    seed  number  — uint32 seed
+ * Output:   Object  — matured world state
+ */
+export function growToMaturity(seed) {
+  const world = createOrganismWorld(seed);
+  let res;
+  do { res = tickOrganism(world); } while (!res.done);
+  return world;
 }

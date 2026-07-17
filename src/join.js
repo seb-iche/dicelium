@@ -10,7 +10,7 @@
  */
 
 import { createRenderer, resizeCanvas, render } from './renderer.js';
-import { createOrganismWorld, tickOrganism } from './organism.js';
+import { createOrganismWorld, tickOrganism, LOCAL_WORLD_SIZE } from './organism.js';
 import { hashStringToSeed } from './rng.js';
 import { generateClaimCode } from './claimcode.js';
 import { isWorldSealed, pickPosition, persistSpawn } from './spawnStore.js';
@@ -57,11 +57,16 @@ function normalizeInput(raw) {
  * Output:   void
  */
 function bloom(seed) {
-  const world = createOrganismWorld(seed, canvas.width, canvas.height);
+  const world = createOrganismWorld(seed);
+  const offsetX = (canvas.width - LOCAL_WORLD_SIZE) / 2;
+  const offsetY = (canvas.height - LOCAL_WORLD_SIZE) / 2;
 
   function frame() {
     const { done } = tickOrganism(world);
+    ctx.save();
+    ctx.translate(offsetX, offsetY);
     render(ctx, world);
+    ctx.restore();
     if (!done) {
       requestAnimationFrame(frame);
     } else {
