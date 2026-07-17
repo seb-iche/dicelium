@@ -165,10 +165,9 @@ function draw(now) {
     ) continue;
 
     if (screenRadius < FULL_DETAIL_SCREEN_RADIUS) {
+      const size = Math.max(3, screenRadius * 1.2);
       ctx.fillStyle = org.colorA;
-      ctx.beginPath();
-      ctx.arc(screen.x, screen.y, Math.max(1.5, screenRadius * 0.6), 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillRect(screen.x - size / 2, screen.y - size / 2, size, size);
     } else {
       const cellPx = Math.max(1, CELL_SIZE * camera.zoom);
       for (const cell of org.cells) {
