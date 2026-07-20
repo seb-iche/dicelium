@@ -113,7 +113,12 @@ export function brighten(r, g, b, t) {
  * Output:   void
  */
 export function render(ctx, world, isoMode = false) {
-  renderFlat(ctx, world, ctx.canvas.width, ctx.canvas.height);
+  // clientWidth/clientHeight (CSS-pixel size) rather than canvas.width/height
+  // (backing-store size): identical for an unscaled canvas, but correct for
+  // a devicePixelRatio-scaled one where a ctx transform already absorbs the
+  // difference and all draw calls (including this fade rect) operate in
+  // CSS-pixel coordinates.
+  renderFlat(ctx, world, ctx.canvas.clientWidth, ctx.canvas.clientHeight);
 }
 
 /**

@@ -6,21 +6,26 @@
  */
 
 import { createWorld, spawnColony, tickWorld } from './world.js';
-import { createRenderer, resizeCanvas, render } from './renderer.js';
+import { createRenderer, render } from './renderer.js';
 import { AudioEngine } from './audio.js';
 import { BIOMES } from './biomes.js';
 import { onMouseMove, onMouseClick, updatePanel, setEnabled, isEnabled } from './inspector.js';
 
-const canvas      = document.getElementById('c');
-const info        = document.getElementById('info');
-const timerEl     = document.getElementById('timer');
-const biomeLabel  = document.getElementById('biome-label');
-const startScreen = document.getElementById('start-screen');
-const btnSnapshot = document.getElementById('btn-snapshot');
-const btnRecord   = document.getElementById('btn-record');
-const btnMute     = document.getElementById('btn-mute');
-const btnMenu     = document.getElementById('btn-menu');
-const btnInspect  = document.getElementById('btn-inspect');
+const canvas          = document.getElementById('c');
+const info            = document.getElementById('info');
+const timerEl         = document.getElementById('timer');
+const biomeLabel      = document.getElementById('biome-label');
+const startScreen     = document.getElementById('start-screen');
+const btnSnapshot     = document.getElementById('btn-snapshot');
+const btnRecord       = document.getElementById('btn-record');
+const btnMute         = document.getElementById('btn-mute');
+const btnMenu         = document.getElementById('btn-menu');
+const btnInspect      = document.getElementById('btn-inspect');
+const btnOptions      = document.getElementById('btn-options');
+const btnOptionsClose = document.getElementById('btn-options-close');
+const optionsSheet    = document.getElementById('options-sheet');
+const optionsBackdrop = document.getElementById('options-backdrop');
+const tapHint         = document.getElementById('tap-hint');
 
 const { ctx } = createRenderer(canvas);
 const audio = new AudioEngine();
@@ -30,6 +35,57 @@ let running = false;
 let startTime = null;
 let currentBiome = 'earthy';
 let muted = false;
+let tapHintTimer = null;
+
+// ── Tap hint ──────────────────────────────────────────────────────────────────
+
+/**
+ * showTapHint
+ * Purpose:  Reveal the "tap anywhere to spawn" affordance for first-time
+ *           visitors. Auto-dismisses after a few seconds even if untouched.
+ * Input:    none
+ * Output:   void
+ */
+function showTapHint() {
+  tapHint.classList.add('visible');
+  tapHintTimer = setTimeout(dismissTapHint, 6000);
+}
+
+/**
+ * dismissTapHint
+ * Purpose:  Fade out the tap hint. Safe to call repeatedly.
+ * Input:    none
+ * Output:   void
+ */
+function dismissTapHint() {
+  clearTimeout(tapHintTimer);
+  tapHint.classList.remove('visible');
+}
+
+// ── Canvas fit ────────────────────────────────────────────────────────────────
+
+/**
+ * fitCanvasToViewport
+ * Purpose:  Size the canvas backing store to the viewport at full device
+ *           pixel density (so it renders crisp on retina screens) while
+ *           keeping every draw call and world coordinate in CSS-pixel
+ *           space via a context transform. Scoped to this page only —
+ *           the shared resizeCanvas() in renderer.js (used by join/world)
+ *           is untouched.
+ * Input:    canvas  HTMLCanvasElement  (mutated)
+ * Output:   { width: number, height: number }  — CSS-pixel logical size
+ */
+function fitCanvasToViewport(canvas) {
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = window.innerWidth;
+  const cssH = window.innerHeight;
+  canvas.width = Math.round(cssW * dpr);
+  canvas.height = Math.round(cssH * dpr);
+  canvas.style.width = `${cssW}px`;
+  canvas.style.height = `${cssH}px`;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { width: cssW, height: cssH };
+}
 
 // ── Timer ─────────────────────────────────────────────────────────────────────
 
@@ -166,16 +222,16 @@ function stopRecording() {
  * Output:   void
  */
 function initWorld(biomeKey) {
-  resizeCanvas(canvas);
+  const { width, height } = fitCanvasToViewport(canvas);
   world = createWorld(biomeKey);
   world.audio = audio;
-  world.W = canvas.width;
-  world.H = canvas.height;
+  world.W = width;
+  world.H = height;
   for (let i = 0; i < 4; i++) {
     spawnColony(
       world,
-      60 + Math.random() * (canvas.width - 120),
-      60 + Math.random() * (canvas.height - 120)
+      60 + Math.random() * (width - 120),
+      60 + Math.random() * (height - 120)
     );
   }
 }
@@ -192,7 +248,7 @@ function reset() {
   muted = false;
   btnMute.textContent = '🔊';
   btnMute.classList.remove('active');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
   startTime = performance.now();
   initWorld(currentBiome);
   if (audio.started) audio.setBiome(currentBiome);
@@ -244,13 +300,15 @@ document.querySelectorAll('.biome-btn').forEach(btn => {
     startTime = performance.now();
     initWorld(currentBiome);
     running = true;
+    showTapHint();
     loop();
   });
 });
 
 document.getElementById('btn-spawn').addEventListener('click', () => {
   if (!world) return;
-  spawnColony(world, 60 + Math.random() * (canvas.width - 120), 60 + Math.random() * (canvas.height - 120));
+  dismissTapHint();
+  spawnColony(world, 60 + Math.random() * (world.W - 120), 60 + Math.random() * (world.H - 120));
 });
 
 document.getElementById('btn-reset').addEventListener('click', () => reset());
@@ -264,16 +322,34 @@ btnInspect.addEventListener('click', () => {
   setEnabled(nowEnabled);
   if (nowEnabled) {
     btnInspect.classList.remove('active');
-    btnInspect.title = 'inspect on — click to disable';
+    btnInspect.textContent = '🔍 inspect: on';
+    btnInspect.title = 'inspect on — tap to disable';
   } else {
     btnInspect.classList.add('active');
-    btnInspect.title = 'inspect off — click to enable';
+    btnInspect.textContent = '🔍 inspect: off';
+    btnInspect.title = 'inspect off — tap to enable';
   }
 });
 
+// ── Options sheet ─────────────────────────────────────────────────────────────
+
+function openOptions() {
+  optionsSheet.classList.remove('hidden');
+  optionsBackdrop.classList.remove('hidden');
+}
+
+function closeOptions() {
+  optionsSheet.classList.add('hidden');
+  optionsBackdrop.classList.add('hidden');
+}
+
+btnOptions.addEventListener('click', openOptions);
+btnOptionsClose.addEventListener('click', closeOptions);
+optionsBackdrop.addEventListener('click', closeOptions);
+
 window.addEventListener('resize', () => {
-  resizeCanvas(canvas);
-  if (world) { world.W = canvas.width; world.H = canvas.height; }
+  const { width, height } = fitCanvasToViewport(canvas);
+  if (world) { world.W = width; world.H = height; }
 });
 
 window.addEventListener('mousemove', (e) => {
@@ -281,6 +357,51 @@ window.addEventListener('mousemove', (e) => {
   if (world && running) onMouseMove(world, e.clientX, e.clientY);
 });
 
+// Desktop mouse: click still opens the inspector panel, unchanged.
 canvas.addEventListener('click', (e) => {
   if (world && running) onMouseClick(world, e.clientX, e.clientY);
+});
+
+// Touch: a quick tap spawns an organism where you tapped; a long press
+// (500ms, held roughly in place) opens the inspector panel instead, so the
+// two gestures don't fight over the same input.
+const LONG_PRESS_MS = 500;
+const PRESS_MOVE_CANCEL_PX = 12;
+let touchPressTimer = null;
+let touchPressStart = null;
+let touchLongPressFired = false;
+
+canvas.addEventListener('pointerdown', (e) => {
+  if (e.pointerType !== 'touch' || !world || !running) return;
+  e.preventDefault(); // suppresses the compatibility mousedown/click that would otherwise double-fire
+  touchLongPressFired = false;
+  touchPressStart = { x: e.clientX, y: e.clientY };
+  touchPressTimer = setTimeout(() => {
+    touchLongPressFired = true;
+    onMouseClick(world, e.clientX, e.clientY);
+  }, LONG_PRESS_MS);
+});
+
+canvas.addEventListener('pointermove', (e) => {
+  if (e.pointerType !== 'touch' || !touchPressStart) return;
+  const dx = e.clientX - touchPressStart.x, dy = e.clientY - touchPressStart.y;
+  if (Math.hypot(dx, dy) > PRESS_MOVE_CANCEL_PX) {
+    clearTimeout(touchPressTimer);
+    touchPressStart = null;
+  }
+});
+
+canvas.addEventListener('pointerup', (e) => {
+  if (e.pointerType !== 'touch') return;
+  clearTimeout(touchPressTimer);
+  if (touchPressStart && !touchLongPressFired && world && running) {
+    dismissTapHint();
+    spawnColony(world, e.clientX, e.clientY);
+  }
+  touchPressStart = null;
+});
+
+canvas.addEventListener('pointercancel', () => {
+  clearTimeout(touchPressTimer);
+  touchPressStart = null;
 });

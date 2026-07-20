@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>D I C E L I U M</title>
   <link rel="stylesheet" href="src/style.css" />
 </head>
@@ -231,21 +231,31 @@
     </div>
   </div>
 
+  <div id="tap-hint">tap anywhere to spawn</div>
+
   <div id="ui">
     <div id="controls">
       <button id="btn-spawn">+ spawn</button>
-      <button id="btn-reset">reset</button>
-      <button id="btn-menu" title="back to menu">⌂ menu</button>
-      <button id="btn-snapshot" title="snapshot">⬛</button>
-      <button id="btn-record" title="record">⏺</button>
       <button id="btn-mute" title="mute">🔊</button>
-      <button id="btn-inspect" title="inspect on — click to disable">🔍</button>
-      <button id="btn-about">?</button>
+      <button id="btn-options" title="more options">⋯</button>
     </div>
-    <div id="info-row">
-      <span id="biome-label"></span>
-      <span id="timer">00:00:00</span>
-      <span id="info"></span>
+  </div>
+
+  <div id="options-backdrop" class="hidden"></div>
+  <div id="options-sheet" class="hidden">
+    <div id="options-inner">
+      <button id="btn-options-close" title="close">× close</button>
+      <button id="btn-reset">↻ reset this world</button>
+      <button id="btn-menu">⌂ change biome</button>
+      <button id="btn-inspect" title="inspect on — tap to disable">🔍 inspect: on</button>
+      <button id="btn-snapshot">⬛ snapshot</button>
+      <button id="btn-record">⏺ record</button>
+      <button id="btn-about">ⓘ about this project</button>
+      <div id="info-row">
+        <span id="biome-label"></span>
+        <span id="timer">00:00:00</span>
+        <span id="info"></span>
+      </div>
     </div>
   </div>
 

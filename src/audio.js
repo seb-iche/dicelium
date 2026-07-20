@@ -134,6 +134,7 @@ export class AudioEngine {
   async start() {
     if (this.started) return;
     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (this.ctx.state === 'suspended') await this.ctx.resume();
     this.master = this.ctx.createGain();
     this.master.gain.setValueAtTime(0.05, this.ctx.currentTime);
     this.master.connect(this.ctx.destination);
