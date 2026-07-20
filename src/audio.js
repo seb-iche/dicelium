@@ -121,6 +121,7 @@ export class AudioEngine {
     this.complexityTarget = 0;
     this.complexityTick = 0;
     this.microRestProb = 0.6;
+    this.muted = false;
   }
 
   /**
@@ -150,6 +151,27 @@ export class AudioEngine {
     this._startMicroEvents();
     this._startSwellCycle();
     this.started = true;
+  }
+
+  /**
+   * setMuted
+   * Purpose:  Single source of truth for mute state. updateWorldState() and
+   *           the swell cycle both continuously re-ramp master gain from
+   *           world complexity — muting only main.js's local flag left
+   *           those writers unaware, so gain would silently climb back up
+   *           within a second or two. Cancelling scheduled values before
+   *           ramping ensures no earlier queued ramp can un-mute us later.
+   * Input:    muted  boolean
+   * Output:   void
+   */
+  setMuted(muted) {
+    this.muted = muted;
+    if (!this.started) return;
+    const now = this.ctx.currentTime;
+    this.master.gain.cancelScheduledValues(now);
+    this.master.gain.setValueAtTime(this.master.gain.value, now);
+    const target = muted ? 0 : 0.05 + this.complexity * 0.25;
+    this.master.gain.linearRampToValueAtTime(target, now + 0.2);
   }
 
   /**
@@ -316,6 +338,7 @@ export class AudioEngine {
   _startSwellCycle() {
     const doSwell = () => {
       if (!this.started) return;
+      if (this.muted) { setTimeout(doSwell, (25 + Math.random() * 35) * 1000); return; }
       const now = this.ctx.currentTime;
       const swellUp   = 8  + Math.random() * 8;
       const swellHold = 4  + Math.random() * 8;
@@ -530,7 +553,7 @@ export class AudioEngine {
     this.complexityTarget = cellScore * 0.6 + bloomScore * 0.3 + eaterScore * 0.1;
     this.complexity += (this.complexityTarget - this.complexity) * 0.05;
     const c = this.complexity;
-    this.master.gain.linearRampToValueAtTime(0.05 + c * 0.25, now + 8);
+    if (!this.muted) this.master.gain.linearRampToValueAtTime(0.05 + c * 0.25, now + 8);
     if (this.droneLayers.length >= 3) {
       this.droneLayers[0].gain.gain.linearRampToValueAtTime(0.012 + c * 0.015, now + 6);
       this.droneLayers[1].gain.gain.linearRampToValueAtTime(c > 0.3 ? (c - 0.3) / 0.7 * 0.018 : 0, now + 6);

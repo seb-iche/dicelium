@@ -2,7 +2,7 @@
  * main.js
  * Entry point. Wires together the world simulation, renderer, audio engine,
  * and UI controls. Manages the start screen (biome selection), game loop,
- * timer, snapshot, recording, mute, back-to-menu, and inspector functionality.
+ * timer, recording, mute, back-to-menu, and inspector functionality.
  */
 
 import { createWorld, spawnColony, tickWorld } from './world.js';
@@ -16,7 +16,6 @@ const info            = document.getElementById('info');
 const timerEl         = document.getElementById('timer');
 const biomeLabel      = document.getElementById('biome-label');
 const startScreen     = document.getElementById('start-screen');
-const btnSnapshot     = document.getElementById('btn-snapshot');
 const btnRecord       = document.getElementById('btn-record');
 const btnMute         = document.getElementById('btn-mute');
 const btnMenu         = document.getElementById('btn-menu');
@@ -103,21 +102,6 @@ function formatTime(ms) {
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
 }
 
-// ── Snapshot ──────────────────────────────────────────────────────────────────
-
-/**
- * takeSnapshot
- * Purpose:  Export current canvas frame as PNG download.
- * Input:    none
- * Output:   void
- */
-function takeSnapshot() {
-  const link = document.createElement('a');
-  link.download = `mycelium-${currentBiome}-${Date.now()}.png`;
-  link.href = canvas.toDataURL('image/png');
-  link.click();
-}
-
 // ── Mute ──────────────────────────────────────────────────────────────────────
 
 /**
@@ -129,14 +113,11 @@ function takeSnapshot() {
 function toggleMute() {
   if (!audio.started) return;
   muted = !muted;
-  const now = audio.ctx.currentTime;
+  audio.setMuted(muted);
   if (muted) {
-    audio.master.gain.linearRampToValueAtTime(0, now + 0.2);
     btnMute.textContent = '🔇';
     btnMute.classList.add('active');
   } else {
-    const targetGain = 0.05 + audio.complexity * 0.25;
-    audio.master.gain.linearRampToValueAtTime(targetGain, now + 0.2);
     btnMute.textContent = '🔊';
     btnMute.classList.remove('active');
   }
@@ -246,6 +227,7 @@ function reset() {
   if (audio.started) audio.stopAll();
   if (isRecording) stopRecording();
   muted = false;
+  audio.setMuted(false);
   btnMute.textContent = '🔊';
   btnMute.classList.remove('active');
   ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
@@ -313,7 +295,6 @@ document.getElementById('btn-spawn').addEventListener('click', () => {
 
 document.getElementById('btn-reset').addEventListener('click', () => reset());
 btnMenu.addEventListener('click', goToMenu);
-btnSnapshot.addEventListener('click', takeSnapshot);
 btnMute.addEventListener('click', toggleMute);
 btnRecord.addEventListener('click', () => { if (isRecording) stopRecording(); else startRecording(); });
 
@@ -357,51 +338,8 @@ window.addEventListener('mousemove', (e) => {
   if (world && running) onMouseMove(world, e.clientX, e.clientY);
 });
 
-// Desktop mouse: click still opens the inspector panel, unchanged.
+// Click (mouse or synthesized from a touch tap) opens the inspector panel.
+// Spawning is button-only — the canvas itself never spawns.
 canvas.addEventListener('click', (e) => {
   if (world && running) onMouseClick(world, e.clientX, e.clientY);
-});
-
-// Touch: a quick tap spawns an organism where you tapped; a long press
-// (500ms, held roughly in place) opens the inspector panel instead, so the
-// two gestures don't fight over the same input.
-const LONG_PRESS_MS = 500;
-const PRESS_MOVE_CANCEL_PX = 12;
-let touchPressTimer = null;
-let touchPressStart = null;
-let touchLongPressFired = false;
-
-canvas.addEventListener('pointerdown', (e) => {
-  if (e.pointerType !== 'touch' || !world || !running) return;
-  e.preventDefault(); // suppresses the compatibility mousedown/click that would otherwise double-fire
-  touchLongPressFired = false;
-  touchPressStart = { x: e.clientX, y: e.clientY };
-  touchPressTimer = setTimeout(() => {
-    touchLongPressFired = true;
-    onMouseClick(world, e.clientX, e.clientY);
-  }, LONG_PRESS_MS);
-});
-
-canvas.addEventListener('pointermove', (e) => {
-  if (e.pointerType !== 'touch' || !touchPressStart) return;
-  const dx = e.clientX - touchPressStart.x, dy = e.clientY - touchPressStart.y;
-  if (Math.hypot(dx, dy) > PRESS_MOVE_CANCEL_PX) {
-    clearTimeout(touchPressTimer);
-    touchPressStart = null;
-  }
-});
-
-canvas.addEventListener('pointerup', (e) => {
-  if (e.pointerType !== 'touch') return;
-  clearTimeout(touchPressTimer);
-  if (touchPressStart && !touchLongPressFired && world && running) {
-    dismissTapHint();
-    spawnColony(world, e.clientX, e.clientY);
-  }
-  touchPressStart = null;
-});
-
-canvas.addEventListener('pointercancel', () => {
-  clearTimeout(touchPressTimer);
-  touchPressStart = null;
 });

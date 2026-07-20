@@ -36,7 +36,7 @@ const shortId = id => Math.floor(id * 99999).toString(36).toUpperCase().slice(0,
 const STAGE_THRESHOLDS = [0, 12, 35, 80];
 const STAGE_NAMES = ['worm', 'colorworm', 'thickworm', 'frog'];
 
-let enabled = true;
+let enabled = false;
 let hovered = null;
 let selected = null;
 
