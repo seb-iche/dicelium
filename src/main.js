@@ -12,6 +12,8 @@ import { BIOMES } from './biomes.js';
 import { onMouseMove, onMouseClick, updatePanel, setEnabled, isEnabled } from './inspector.js';
 
 const canvas          = document.getElementById('c');
+const chamber         = document.getElementById('chamber');
+const seedValueEl     = document.getElementById('seed-value');
 const info            = document.getElementById('info');
 const timerEl         = document.getElementById('timer');
 const biomeLabel      = document.getElementById('biome-label');
@@ -65,19 +67,20 @@ function dismissTapHint() {
 
 /**
  * fitCanvasToViewport
- * Purpose:  Size the canvas backing store to the viewport at full device
- *           pixel density (so it renders crisp on retina screens) while
- *           keeping every draw call and world coordinate in CSS-pixel
- *           space via a context transform. Scoped to this page only —
- *           the shared resizeCanvas() in renderer.js (used by join/world)
- *           is untouched.
+ * Purpose:  Size the canvas backing store to the chamber's box (not the raw
+ *           window — the chamber is a bezeled sub-region of the viewport)
+ *           at full device pixel density, so it renders crisp on retina
+ *           screens, while keeping every draw call and world coordinate in
+ *           CSS-pixel space via a context transform. Scoped to this page
+ *           only — the shared resizeCanvas() in renderer.js (used by
+ *           join/world) is untouched.
  * Input:    canvas  HTMLCanvasElement  (mutated)
  * Output:   { width: number, height: number }  — CSS-pixel logical size
  */
 function fitCanvasToViewport(canvas) {
   const dpr = window.devicePixelRatio || 1;
-  const cssW = window.innerWidth;
-  const cssH = window.innerHeight;
+  const cssW = chamber.clientWidth;
+  const cssH = chamber.clientHeight;
   canvas.width = Math.round(cssW * dpr);
   canvas.height = Math.round(cssH * dpr);
   canvas.style.width = `${cssW}px`;
@@ -197,6 +200,20 @@ function stopRecording() {
 // ── World lifecycle ───────────────────────────────────────────────────────────
 
 /**
+ * rollDisplaySeed
+ * Purpose:  Cosmetic-only readout for the chamber's SEED line — this
+ *           sandbox has no real deterministic seed (colonies are
+ *           Math.random-driven), so this is flavor text, not a value
+ *           anything can be reproduced from.
+ * Input:    none
+ * Output:   void
+ */
+function rollDisplaySeed() {
+  seedValueEl.textContent = Math.floor(Math.random() * 0x10000)
+    .toString(16).toUpperCase().padStart(4, '0');
+}
+
+/**
  * initWorld
  * Purpose:  Create and seed a new world for the given biome.
  * Input:    biomeKey  string
@@ -208,6 +225,7 @@ function initWorld(biomeKey) {
   world.audio = audio;
   world.W = width;
   world.H = height;
+  rollDisplaySeed();
   for (let i = 0; i < 4; i++) {
     spawnColony(
       world,

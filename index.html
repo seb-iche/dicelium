@@ -4,10 +4,32 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>D I C E L I U M</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="src/style.css" />
 </head>
 <body>
-  <canvas id="c"></canvas>
+  <div id="chassis">
+    <div id="topbar">
+      <span id="live-dot"></span>
+      <span id="wordmark">DICELIUM</span>
+    </div>
+
+    <div id="chamber" class="chamber-light">
+      <canvas id="c"></canvas>
+    </div>
+
+    <div id="seed-readout">SEED · <span id="seed-value">----</span></div>
+
+    <div id="control-panel">
+      <div id="controls">
+        <button id="btn-spawn"><span id="spawn-icon">+</span> SPAWN</button>
+        <button id="btn-mute" title="mute">🔊</button>
+        <button id="btn-options" title="more options">MENU</button>
+      </div>
+    </div>
+  </div>
 
   <div id="start-screen">
     <div id="start-inner">
@@ -232,14 +254,6 @@
   </div>
 
   <div id="tap-hint">tap + spawn to grow your world</div>
-
-  <div id="ui">
-    <div id="controls">
-      <button id="btn-spawn">+ spawn</button>
-      <button id="btn-mute" title="mute">🔊</button>
-      <button id="btn-options" title="more options">⋯</button>
-    </div>
-  </div>
 
   <div id="options-backdrop" class="hidden"></div>
   <div id="options-sheet" class="hidden">
