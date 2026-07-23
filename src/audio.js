@@ -125,6 +125,30 @@ export class AudioEngine {
   }
 
   /**
+   * _unlockIOSSilentSwitch
+   * Purpose:  iOS Safari mutes Web Audio API output entirely when the
+   *           hardware ring/silent switch is on — it treats JS-generated
+   *           audio as the "ambient" session category, which the switch
+   *           silences. Playing a real (if silent) HTML5 <audio> element
+   *           from the same user gesture switches the page's audio session
+   *           to the "playback" category, which ignores the switch — and
+   *           that category then applies to the Web Audio output too.
+   *           No-op (and harmless) on browsers without this quirk.
+   * Input:    none
+   * Output:   void
+   */
+  _unlockIOSSilentSwitch() {
+    if (this._silentUnlockAudio) return;
+    // 8 samples of silence, WAV-encoded — kept inline so no extra asset/request is needed.
+    const silentWav = 'data:audio/wav;base64,UklGRiwAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQgAAACAgICAgICAgA==';
+    const el = new Audio(silentWav);
+    el.loop = true;
+    el.volume = 0.01;
+    el.play().catch(() => {});
+    this._silentUnlockAudio = el;
+  }
+
+  /**
    * start
    * Purpose:  Initialise the Web Audio context and all continuous audio layers.
    *           Must be called from a user gesture (browser autoplay policy).
@@ -134,6 +158,7 @@ export class AudioEngine {
    */
   async start() {
     if (this.started) return;
+    this._unlockIOSSilentSwitch();
     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     if (this.ctx.state === 'suspended') await this.ctx.resume();
     this.master = this.ctx.createGain();
