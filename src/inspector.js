@@ -50,6 +50,18 @@ panel.id = 'inspector-panel';
 panel.className = 'inspector-hidden';
 document.body.appendChild(panel);
 
+// Delegated close handler on the persistent panel element. The panel's
+// innerHTML is rebuilt every frame by updatePanel(), so a listener bound
+// directly to the close button would be destroyed (and the click never
+// completes) between mousedown and click. Binding to `panel` once here
+// survives every re-render.
+panel.addEventListener('click', (e) => {
+  if (e.target.closest('.panel-close')) {
+    selected = null;
+    panel.className = 'inspector-hidden';
+  }
+});
+
 /**
  * findObjectAt
  * Purpose:  Scan the world for the closest object to (mx, my).
@@ -260,10 +272,6 @@ function renderPanel(hit) {
   }
 
   panel.innerHTML = html;
-  document.getElementById('panel-close-btn')?.addEventListener('click', () => {
-    selected = null;
-    panel.className = 'inspector-hidden';
-  });
 }
 
 /**
